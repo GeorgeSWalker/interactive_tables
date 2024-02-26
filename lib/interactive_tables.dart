@@ -1,6 +1,5 @@
 library interactive_tables;
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 
@@ -427,7 +426,7 @@ class _InteractiveTableState extends State<InteractiveTable> {
                   if (widget.allowSorting) {
                     sortAscending = sortedColumnIndex == widget.cols.indexOf(e) ? !sortAscending : true;
                     sortedColumnIndex = widget.cols.indexOf(e);
-                    List<Map<String, dynamic>> sortedList = List<Map<String, dynamic>>.from(this._filteredDataList);
+                    List<Map<String, dynamic>> sortedList = List<Map<String, dynamic>>.from(_filteredDataList);
                     sortedList.sort((a, b) {
                       if (a[e] is String) {
                         return sortAscending
