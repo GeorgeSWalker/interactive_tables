@@ -72,7 +72,6 @@ class InteractiveTable extends StatefulWidget {
   /// The column headers are not editable
   /// The column headers are not selectable
   /// The column headers are not deletable
-  /// The column headers are not reorderable
   /// The column headers are not draggable
   /// The column headers are not droppable
   final List<String> cols;
@@ -99,7 +98,6 @@ class InteractiveTable extends StatefulWidget {
   /// The rows are editable
   /// The rows are selectable
   /// The rows are deletable
-  /// The rows are reorderable
   ///
   /// Example:
   /// dataList: [
@@ -276,31 +274,21 @@ class _InteractiveTableState extends State<InteractiveTable> {
   /// The add button is in the first column
   ///
   /// returns: a TableRow widget
-  TableRow _getBottomRows() {
+  TableRow _getBottomRows(ThemeData theme) {
     int numberOfCols = widget.cols.length;
 
     List<TableCell> cells = [
       TableCell(
         child: IconButton(
           icon: const Icon(Icons.add),
-          tooltip: 'Add new row',
+          tooltip: widget.bottomRowText,
           isSelected: false,
           onPressed: () {
             setState(() {
               if (widget.onRowAdd != null) {
                 widget.onRowAdd!();
-                /*_dataList.add(
-                  List<String>.generate(numberOfCols, (index) {
-                    if (index == 0) {
-                      int? lastYear = int.tryParse(_dataList.last[0]);
-                      if(lastYear == null) return '';
-                      int newYear = lastYear + 1;
-                      return newYear.toString();
-                    } else {
-                      return '';
-                    }
-                  }),
-                );*/
+                _dataList = widget.data.toList();
+                _filteredDataList = widget.data.toList();
               }
             });
           },
@@ -311,24 +299,20 @@ class _InteractiveTableState extends State<InteractiveTable> {
           padding: const EdgeInsets.all(8.0),
           child: Text(
             widget.bottomRowText,
-            style: const TextStyle(
-              color: Colors.black,
-            ),
+            style: theme.textTheme.bodyMedium!.copyWith(
+              color: widget.headerRowTextColor,
+              fontWeight: FontWeight.bold,
           ),
         ),
-      )
-    ];
+      ),
+    ),
+  ];
 
     for (int i = 1; i < numberOfCols; i++) {
-      cells.add(const TableCell(
+      cells.add(TableCell(
         child: Padding(
-          padding: EdgeInsets.all(8.0),
-          child: Text(
-            '',
-            style: TextStyle(
-              color: Colors.black,
-            ),
-          ),
+          padding: const EdgeInsets.all(8.0),
+          child: Container(),
         ),
       ));
     }
@@ -609,7 +593,7 @@ class _InteractiveTableState extends State<InteractiveTable> {
             children: [
               headerRow(_theme),
               ...dataRows(_theme, _filteredDataList),
-              _getBottomRows(),
+              _getBottomRows(_theme),
             ],
           ),
         ],
