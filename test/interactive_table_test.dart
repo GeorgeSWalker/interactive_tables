@@ -83,4 +83,55 @@ void main() {
         expect(bobLocationDesc.dy, lessThan(aliceLocationDesc.dy));
       });
 
+  testWidgets('InteractiveTable filters with internal search bar',
+          (WidgetTester tester) async {
+        await tester.pumpWidget(createTestApp(
+          const InteractiveTable(
+            data: testData,
+            searchable: true, // Enable internal search
+          ),
+        ));
+
+        // Enter 'Alice' into the internal search field.
+        await tester.enterText(find.byType(TextField), 'Alice');
+        await tester.pumpAndSettle();
+
+        // Create specific finders that only look for text inside the DataTable.
+        final findAliceInTable =
+        find.descendant(of: find.byType(DataTable), matching: find.text('Alice'));
+        final findBobInTable =
+        find.descendant(of: find.byType(DataTable), matching: find.text('Bob'));
+
+        // Now, only Alice should be visible inside the table.
+        expect(findAliceInTable, findsOneWidget);
+        expect(findBobInTable, findsNothing);
+      });
+
+  testWidgets('InteractiveTable filters with external controller',
+          (WidgetTester tester) async {
+        final searchController = TextEditingController();
+
+        await tester.pumpWidget(createTestApp(
+          InteractiveTable(
+            data: testData,
+            searchController: searchController, // Provide external controller
+          ),
+        ));
+
+        // Initially, both should be visible.
+        expect(find.text('Alice'), findsOneWidget);
+        expect(find.text('Bob'), findsOneWidget);
+        // No internal TextField should be created.
+        expect(find.byType(TextField), findsNothing);
+
+        // Programmatically set the text on the external controller.
+        searchController.text = 'Bob';
+        await tester.pumpAndSettle();
+
+        // Now, only Bob should be visible.
+        expect(find.text('Alice'), findsNothing);
+        expect(find.text('Bob'), findsOneWidget);
+
+        searchController.dispose();
+      });
 }
