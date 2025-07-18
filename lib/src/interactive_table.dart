@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:interactive_tables/src/table_style.dart';
 
 class InteractiveTable extends StatefulWidget {
   final List<Map<String, dynamic>> data;
   final List<String>? headers;
+  final TableStyle tableStyle;
 
   const InteractiveTable({
     super.key,
     required this.data,
     this.headers,
+    this.tableStyle = const TableStyle(),
   });
 
   @override
@@ -35,22 +38,37 @@ class _InteractiveTableState extends State<InteractiveTable> {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: DataTable(
+        headingTextStyle: widget.tableStyle.headerTextStyle,
+        dataTextStyle: widget.tableStyle.rowTextStyle,
+        headingRowColor: MaterialStateProperty.all(widget.tableStyle.headerColor),
+        // The main change is in the rows section below
         columns: _headers
             .map(
               (header) => DataColumn(
-            label: Text(
-              header,
-              style: const TextStyle(fontWeight: FontWeight.bold),
+            label: Padding(
+              padding: widget.tableStyle.cellPadding,
+              child: Text(header),
             ),
           ),
         )
             .toList(),
-        rows: widget.data.map((row) {
+        rows: widget.data.asMap().entries.map((entry) {
+          final index = entry.key;
+          final row = entry.value;
+
+          final Color? rowColor = index.isEven
+              ? widget.tableStyle.evenRowColor
+              : widget.tableStyle.oddRowColor;
+
           return DataRow(
+            color: MaterialStateProperty.all(rowColor),
             cells: _headers.map((header) {
               final value = row[header];
               return DataCell(
-                Text(value?.toString() ?? ''),
+                Padding(
+                  padding: widget.tableStyle.cellPadding,
+                  child: Text(value?.toString() ?? ''),
+                ),
               );
             }).toList(),
           );
