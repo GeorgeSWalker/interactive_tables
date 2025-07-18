@@ -15,6 +15,20 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   final _searchController = TextEditingController();
 
+  // Let's create more data to showcase pagination
+  final List<Map<String, dynamic>> _sampleData = List.generate(
+    50,
+        (index) => {
+      'ID': index + 1,
+      'Name': 'User ${index + 1}',
+      'Role': (index % 3 == 0)
+          ? 'Developer'
+          : (index % 3 == 1)
+          ? 'Designer'
+          : 'Manager',
+    },
+  );
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -34,7 +48,6 @@ class _MyAppState extends State<MyApp> {
           padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
-              // This is our external search field
               TextField(
                 controller: _searchController,
                 decoration: const InputDecoration(
@@ -44,12 +57,12 @@ class _MyAppState extends State<MyApp> {
                 ),
               ),
               const SizedBox(height: 16),
-              // The table now takes up the remaining space
               Expanded(
                 child: InteractiveTable(
-                  // We pass the controller here
                   searchController: _searchController,
                   sortable: true,
+                  pagination: true, // Enable pagination
+                  rowsPerPage: 8, // Set rows per page
                   tableStyle: TableStyle(
                     headerColor: Colors.blueGrey[800],
                     evenRowColor: Colors.grey[850],
@@ -58,20 +71,8 @@ class _MyAppState extends State<MyApp> {
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
-                    rowTextStyle: const TextStyle(
-                      color: Colors.white70,
-                    ),
-                    cellPadding: const EdgeInsets.symmetric(
-                      vertical: 12.0,
-                      horizontal: 16.0,
-                    ),
                   ),
-                  data: const [
-                    {'ID': 1, 'Name': 'John Doe', 'Age': 30, 'Role': 'Developer'},
-                    {'ID': 2, 'Name': 'Jane Smith', 'Age': 25, 'Role': 'Designer'},
-                    {'ID': 3, 'Name': 'Peter Jones', 'Age': 42, 'Role': 'Manager'},
-                    {'ID': 4, 'Name': 'Lisa Williams', 'Age': 35, 'Role': 'Product Owner'},
-                  ],
+                  data: _sampleData,
                 ),
               ),
             ],

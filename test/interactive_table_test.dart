@@ -134,4 +134,48 @@ void main() {
 
         searchController.dispose();
       });
+
+  testWidgets('InteractiveTable paginates data correctly',
+          (WidgetTester tester) async {
+        // Create a larger dataset for testing pagination
+        final List<Map<String, dynamic>> paginationData = List.generate(
+          25,
+              (index) => {'ID': index + 1, 'Name': 'User ${index + 1}'},
+        );
+
+        await tester.pumpWidget(createTestApp(
+          InteractiveTable(
+            data: paginationData,
+            pagination: true,
+            rowsPerPage: 10,
+          ),
+        ));
+        await tester.pumpAndSettle();
+
+        // On page 1, User 1 should be visible, but User 11 should not.
+        expect(find.text('User 1'), findsOneWidget);
+        expect(find.text('User 11'), findsNothing);
+
+        // Verify the page counter text.
+        expect(find.text('Page 1 of 3'), findsOneWidget);
+
+        // Tap the "Next" button to go to page 2.
+        await tester.tap(find.byIcon(Icons.chevron_right));
+        await tester.pumpAndSettle();
+
+        // On page 2, User 1 should be gone, and User 11 should be visible.
+        expect(find.text('User 1'), findsNothing);
+        expect(find.text('User 11'), findsOneWidget);
+        expect(find.text('Page 2 of 3'), findsOneWidget);
+
+        // Tap the "Previous" button to go back to page 1.
+        await tester.tap(find.byIcon(Icons.chevron_left));
+        await tester.pumpAndSettle();
+
+        // We should be back to the initial state.
+        expect(find.text('User 1'), findsOneWidget);
+        expect(find.text('User 11'), findsNothing);
+        expect(find.text('Page 1 of 3'), findsOneWidget);
+      });
+
 }
