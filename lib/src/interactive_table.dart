@@ -14,6 +14,9 @@ class InteractiveTable extends StatefulWidget {
   final int rowsPerPage;
   final bool stickyHeaders;
   final Map<String, double>? columnWidths;
+  final bool selectable;
+  final ValueChanged<List<Map<String, dynamic>>>? onSelectionChanged;
+
 
   const InteractiveTable({
     super.key,
@@ -27,6 +30,8 @@ class InteractiveTable extends StatefulWidget {
     this.rowsPerPage = 10,
     this.stickyHeaders = false,
     this.columnWidths,
+    this.selectable = false,
+    this.onSelectionChanged,
   }) : assert(!stickyHeaders || columnWidths != null,
   'columnWidths must be provided when stickyHeaders is true.');
 
@@ -45,10 +50,11 @@ class _InteractiveTableState extends State<InteractiveTable> {
   bool _isExternalController = false;
   int _currentPage = 0;
 
-  // For linked horizontal scrolling
   late LinkedScrollControllerGroup _scrollControllerGroup;
   late ScrollController _headerScrollController;
   late ScrollController _bodyScrollController;
+
+  final Set<Map<String, dynamic>> _selectedRows = {};
 
 
   @override
@@ -92,11 +98,18 @@ class _InteractiveTableState extends State<InteractiveTable> {
 
   void _initializeState() {
     _sourceData = List<Map<String, dynamic>>.from(widget.data);
-    _headers = widget.headers ??
-        (widget.data.isNotEmpty ? widget.data.first.keys.toList() : []);
+    _headers = widget.headers != null
+        ? List<String>.from(widget.headers!)
+        : (widget.data.isNotEmpty ? widget.data.first.keys.toList() : []);
+
+    if (widget.selectable && widget.stickyHeaders && !_headers.contains('Select')) {
+      _headers.insert(0, 'Select');
+    }
+
     _sortColumnIndex = null;
     _sortAscending = true;
     _currentPage = 0;
+    _selectedRows.clear();
     _updateDataView();
   }
 
@@ -106,6 +119,8 @@ class _InteractiveTableState extends State<InteractiveTable> {
   }
 
   void _sort(int columnIndex) {
+    if (widget.stickyHeaders && widget.selectable && columnIndex == 0) return;
+
     if (_sortColumnIndex == columnIndex) {
       _sortAscending = !_sortAscending;
     } else {
@@ -118,6 +133,17 @@ class _InteractiveTableState extends State<InteractiveTable> {
   void _changePage(int newPage) {
     _currentPage = newPage;
     _updateDataView();
+  }
+
+  void _toggleRowSelection(Map<String, dynamic> rowData, bool? isSelected) {
+    setState(() {
+      if (isSelected == true) {
+        _selectedRows.add(rowData);
+      } else {
+        _selectedRows.remove(rowData);
+      }
+    });
+    widget.onSelectionChanged?.call(_selectedRows.toList());
   }
 
   void _updateDataView() {
@@ -164,15 +190,20 @@ class _InteractiveTableState extends State<InteractiveTable> {
   Widget _buildStickyHeaderTable() {
     final int totalRows = _filteredData.length;
     final int totalPages = (totalRows / widget.rowsPerPage).ceil();
+
+    final customWidths = Map<String, double>.from(widget.columnWidths ?? {});
+    if (widget.selectable) {
+      customWidths.putIfAbsent('Select', () => 60.0);
+    }
+
     final columnWidths = _headers
         .asMap()
-        .map((key, value) => MapEntry(key, FixedColumnWidth(widget.columnWidths![value]!)));
+        .map((key, value) => MapEntry(key, FixedColumnWidth(customWidths[value]!)));
 
     return Column(
       children: [
         if (widget.searchable && !_isExternalController)
           _buildSearchBar(),
-        // Sticky Header
         SingleChildScrollView(
           controller: _headerScrollController,
           scrollDirection: Axis.horizontal,
@@ -183,7 +214,6 @@ class _InteractiveTableState extends State<InteractiveTable> {
             ],
           ),
         ),
-        // Scrollable Body
         Expanded(
           child: SingleChildScrollView(
             scrollDirection: Axis.vertical,
@@ -209,12 +239,19 @@ class _InteractiveTableState extends State<InteractiveTable> {
       children: _headers.asMap().entries.map((entry) {
         final index = entry.key;
         final header = entry.value;
+
+        if (header == 'Select') {
+          return const Padding(
+            padding: EdgeInsets.zero,
+            child: SizedBox.shrink(),
+          );
+        }
+
         return InkWell(
           onTap: widget.sortable ? () => _sort(index) : null,
           child: Padding(
             padding: widget.tableStyle.cellPadding,
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
               children: [
                 Text(header, style: widget.tableStyle.headerTextStyle),
                 if (widget.sortable && _sortColumnIndex == index)
@@ -241,6 +278,15 @@ class _InteractiveTableState extends State<InteractiveTable> {
       return TableRow(
         decoration: BoxDecoration(color: rowColor),
         children: _headers.map((header) {
+          if (header == 'Select') {
+            return TableCell(
+              verticalAlignment: TableCellVerticalAlignment.middle,
+              child: Checkbox(
+                value: _selectedRows.contains(rowData),
+                onChanged: (isSelected) => _toggleRowSelection(rowData, isSelected),
+              ),
+            );
+          }
           return Padding(
             padding: widget.tableStyle.cellPadding,
             child: Text(
@@ -283,7 +329,12 @@ class _InteractiveTableState extends State<InteractiveTable> {
                 );
               }).toList(),
               rows: _paginatedData.map((row) {
+                final isSelected = _selectedRows.contains(row);
                 return DataRow(
+                  selected: isSelected,
+                  onSelectChanged: widget.selectable
+                      ? (isSelected) => _toggleRowSelection(row, isSelected)
+                      : null,
                   cells: _headers.map((header) {
                     return DataCell(Text(row[header]?.toString() ?? ''));
                   }).toList(),

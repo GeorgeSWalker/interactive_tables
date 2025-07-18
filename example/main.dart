@@ -14,6 +14,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   final _searchController = TextEditingController();
+  List<Map<String, dynamic>> _selectedRows = [];
 
   final List<Map<String, dynamic>> _sampleData = List.generate(
     50,
@@ -46,6 +47,7 @@ class _MyAppState extends State<MyApp> {
         body: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               TextField(
                 controller: _searchController,
@@ -55,21 +57,27 @@ class _MyAppState extends State<MyApp> {
                   prefixIcon: Icon(Icons.search),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
+              Text('${_selectedRows.length} rows selected'),
+              const SizedBox(height: 10),
               Expanded(
                 child: InteractiveTable(
                   searchController: _searchController,
                   sortable: true,
                   pagination: true,
                   rowsPerPage: 15,
-                  // --- Sticky Header Configuration ---
-                  stickyHeaders: true, // Enable sticky headers
-                  columnWidths: const { // Provide column widths
+                  stickyHeaders: true,
+                  columnWidths: const {
                     'ID': 50.0,
                     'Name': 150.0,
                     'Role': 150.0,
                   },
-                  // ------------------------------------
+                  selectable: true,
+                  onSelectionChanged: (selectedRows) {
+                    setState(() {
+                      _selectedRows = selectedRows;
+                    });
+                  },
                   tableStyle: TableStyle(
                     headerColor: Colors.blueGrey[800],
                     evenRowColor: Colors.grey[850],

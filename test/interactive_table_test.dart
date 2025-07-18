@@ -178,4 +178,39 @@ void main() {
         expect(find.text('Page 1 of 3'), findsOneWidget);
       });
 
+  testWidgets('InteractiveTable handles row selection in a regular table',
+          (WidgetTester tester) async {
+        final List<Map<String, dynamic>> selectionData = [
+          {'ID': 1, 'Name': 'Alice'},
+          {'ID': 2, 'Name': 'Bob'},
+        ];
+        List<Map<String, dynamic>> selectedRows = [];
+
+        await tester.pumpWidget(createTestApp(
+          InteractiveTable(
+            data: selectionData,
+            selectable: true,
+            onSelectionChanged: (rows) {
+              selectedRows = rows;
+            },
+          ),
+        ));
+        await tester.pumpAndSettle();
+
+        // Tap a cell in the row to select it. This is how DataTable handles it.
+        await tester.tap(find.text('Alice'));
+        await tester.pumpAndSettle();
+
+        // Verify the callback was triggered and the list contains Alice's data.
+        expect(selectedRows.length, 1);
+        expect(selectedRows.first['Name'], 'Alice');
+
+        // Tap the cell again to de-select.
+        await tester.tap(find.text('Alice'));
+        await tester.pumpAndSettle();
+
+        // Verify the callback was triggered and the list is now empty.
+        expect(selectedRows.length, 0);
+      });
+
 }
