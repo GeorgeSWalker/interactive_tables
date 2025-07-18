@@ -1,5 +1,5 @@
 name: example
-description: Demonstrates how to use the interactive_tables package.
+description: Demonstrates how to use the power_table package.
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -7,7 +7,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  interactive_tables:
+  power_table:
     path: ../
 
 flutter:

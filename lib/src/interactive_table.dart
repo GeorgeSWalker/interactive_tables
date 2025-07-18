@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:interactive_tables/src/table_style.dart';
+import 'table_style.dart'; // Corrected import
 import 'package:linked_scroll_controller/linked_scroll_controller.dart';
 import 'dart:math';
 

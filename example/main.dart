@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:interactive_tables/interactive_tables.dart';
+import 'package:power_table/power_table.dart';
 
 void main() {
   runApp(const MyApp());
@@ -38,11 +38,11 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Interactive Table Example',
+      title: 'Power Table Example',
       theme: ThemeData.dark(),
       home: Scaffold(
         appBar: AppBar(
-          title: const Text('Interactive Table Example'),
+          title: const Text('Power Table Example'),
         ),
         body: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -71,6 +71,7 @@ class _MyAppState extends State<MyApp> {
                     'ID': 50.0,
                     'Name': 150.0,
                     'Role': 150.0,
+                    'Select': 60.0,
                   },
                   selectable: true,
                   onSelectionChanged: (selectedRows) {
@@ -87,7 +88,7 @@ class _MyAppState extends State<MyApp> {
                         return const TextStyle(color: Colors.yellowAccent);
                       }
                     }
-                    return null; // Return null for all other cases
+                    return null;
                   },
                   tableStyle: TableStyle(
                     headerColor: Colors.blueGrey[800],
@@ -97,7 +98,7 @@ class _MyAppState extends State<MyApp> {
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
-                    rowTextStyle: const TextStyle( // Default style for all rows
+                    rowTextStyle: const TextStyle(
                       color: Colors.white70,
                     ),
                   ),
