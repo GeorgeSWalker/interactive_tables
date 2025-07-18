@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:interactive_tables/src/table_style.dart';
+import 'package:linked_scroll_controller/linked_scroll_controller.dart';
 import 'dart:math';
 
 class InteractiveTable extends StatefulWidget {
@@ -11,6 +12,8 @@ class InteractiveTable extends StatefulWidget {
   final TextEditingController? searchController;
   final bool pagination;
   final int rowsPerPage;
+  final bool stickyHeaders;
+  final Map<String, double>? columnWidths;
 
   const InteractiveTable({
     super.key,
@@ -22,7 +25,10 @@ class InteractiveTable extends StatefulWidget {
     this.searchController,
     this.pagination = false,
     this.rowsPerPage = 10,
-  });
+    this.stickyHeaders = false,
+    this.columnWidths,
+  }) : assert(!stickyHeaders || columnWidths != null,
+  'columnWidths must be provided when stickyHeaders is true.');
 
   @override
   State<InteractiveTable> createState() => _InteractiveTableState();
@@ -39,11 +45,22 @@ class _InteractiveTableState extends State<InteractiveTable> {
   bool _isExternalController = false;
   int _currentPage = 0;
 
+  // For linked horizontal scrolling
+  late LinkedScrollControllerGroup _scrollControllerGroup;
+  late ScrollController _headerScrollController;
+  late ScrollController _bodyScrollController;
+
+
   @override
   void initState() {
     super.initState();
     _isExternalController = widget.searchController != null;
     _searchController = widget.searchController ?? TextEditingController();
+
+    _scrollControllerGroup = LinkedScrollControllerGroup();
+    _headerScrollController = _scrollControllerGroup.addAndGet();
+    _bodyScrollController = _scrollControllerGroup.addAndGet();
+
     _initializeState();
     _searchController.addListener(_onSearchChanged);
   }
@@ -68,6 +85,8 @@ class _InteractiveTableState extends State<InteractiveTable> {
     if (!_isExternalController) {
       _searchController.dispose();
     }
+    _headerScrollController.dispose();
+    _bodyScrollController.dispose();
     super.dispose();
   }
 
@@ -82,7 +101,7 @@ class _InteractiveTableState extends State<InteractiveTable> {
   }
 
   void _onSearchChanged() {
-    _currentPage = 0; // Reset to first page on search
+    _currentPage = 0;
     _updateDataView();
   }
 
@@ -102,7 +121,6 @@ class _InteractiveTableState extends State<InteractiveTable> {
   }
 
   void _updateDataView() {
-    // 1. Filter
     final query = _searchController.text.toLowerCase();
     _filteredData = _sourceData.where((row) {
       return row.values.any((value) {
@@ -110,7 +128,6 @@ class _InteractiveTableState extends State<InteractiveTable> {
       });
     }).toList();
 
-    // 2. Sort
     if (_sortColumnIndex != null) {
       final header = _headers[_sortColumnIndex!];
       final getField = (Map<String, dynamic> d) => d[header];
@@ -123,7 +140,6 @@ class _InteractiveTableState extends State<InteractiveTable> {
       });
     }
 
-    // 3. Paginate
     if (widget.pagination) {
       final startIndex = _currentPage * widget.rowsPerPage;
       final endIndex = min(startIndex + widget.rowsPerPage, _filteredData.length);
@@ -132,43 +148,124 @@ class _InteractiveTableState extends State<InteractiveTable> {
       _paginatedData = List.from(_filteredData);
     }
 
-    setState(() {});
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (widget.stickyHeaders) {
+      return _buildStickyHeaderTable();
+    }
+    return _buildRegularTable();
+  }
+
+  Widget _buildStickyHeaderTable() {
+    final int totalRows = _filteredData.length;
+    final int totalPages = (totalRows / widget.rowsPerPage).ceil();
+    final columnWidths = _headers
+        .asMap()
+        .map((key, value) => MapEntry(key, FixedColumnWidth(widget.columnWidths![value]!)));
+
+    return Column(
+      children: [
+        if (widget.searchable && !_isExternalController)
+          _buildSearchBar(),
+        // Sticky Header
+        SingleChildScrollView(
+          controller: _headerScrollController,
+          scrollDirection: Axis.horizontal,
+          child: Table(
+            columnWidths: columnWidths,
+            children: [
+              _buildHeaderRow(),
+            ],
+          ),
+        ),
+        // Scrollable Body
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.vertical,
+            child: SingleChildScrollView(
+              controller: _bodyScrollController,
+              scrollDirection: Axis.horizontal,
+              child: Table(
+                columnWidths: columnWidths,
+                children: _buildDataRows(),
+              ),
+            ),
+          ),
+        ),
+        if (widget.pagination && totalPages > 1)
+          _buildPaginationControls(totalPages),
+      ],
+    );
+  }
+
+  TableRow _buildHeaderRow() {
+    return TableRow(
+      decoration: BoxDecoration(color: widget.tableStyle.headerColor),
+      children: _headers.asMap().entries.map((entry) {
+        final index = entry.key;
+        final header = entry.value;
+        return InkWell(
+          onTap: widget.sortable ? () => _sort(index) : null,
+          child: Padding(
+            padding: widget.tableStyle.cellPadding,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Text(header, style: widget.tableStyle.headerTextStyle),
+                if (widget.sortable && _sortColumnIndex == index)
+                  Icon(
+                    _sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                    size: widget.tableStyle.headerTextStyle.fontSize,
+                    color: widget.tableStyle.headerTextStyle.color,
+                  ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  List<TableRow> _buildDataRows() {
+    return _paginatedData.asMap().entries.map((entry) {
+      final index = entry.key;
+      final rowData = entry.value;
+      final Color? rowColor = index.isEven
+          ? widget.tableStyle.evenRowColor
+          : widget.tableStyle.oddRowColor;
+      return TableRow(
+        decoration: BoxDecoration(color: rowColor),
+        children: _headers.map((header) {
+          return Padding(
+            padding: widget.tableStyle.cellPadding,
+            child: Text(
+              rowData[header]?.toString() ?? '',
+              style: widget.tableStyle.rowTextStyle,
+            ),
+          );
+        }).toList(),
+      );
+    }).toList();
+  }
+
+  Widget _buildRegularTable() {
     final int totalRows = _filteredData.length;
     final int totalPages = (totalRows / widget.rowsPerPage).ceil();
 
     return Column(
       children: [
         if (widget.searchable && !_isExternalController)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: const InputDecoration(
-                labelText: 'Search',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.search),
-              ),
-            ),
-          ),
+          _buildSearchBar(),
         Expanded(
           child: widget.data.isEmpty
-              ? const Center(
-            child: Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Text('No data to display'),
-            ),
-          )
+              ? _buildEmptyState('No data to display')
               : _filteredData.isEmpty
-              ? const Center(
-            child: Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Text('No matching records found'),
-            ),
-          )
+              ? _buildEmptyState('No matching records found')
               : SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: DataTable(
@@ -176,38 +273,19 @@ class _InteractiveTableState extends State<InteractiveTable> {
               sortAscending: _sortAscending,
               headingTextStyle: widget.tableStyle.headerTextStyle,
               dataTextStyle: widget.tableStyle.rowTextStyle,
-              headingRowColor: WidgetStateProperty.all(
-                  widget.tableStyle.headerColor),
+              headingRowColor: WidgetStateProperty.all(widget.tableStyle.headerColor),
               columns: _headers.asMap().entries.map((entry) {
                 final index = entry.key;
                 final header = entry.value;
                 return DataColumn(
-                  label: Padding(
-                    padding: widget.tableStyle.cellPadding,
-                    child: Text(header),
-                  ),
-                  onSort: widget.sortable
-                      ? (columnIndex, ascending) => _sort(index)
-                      : null,
+                  label: Text(header),
+                  onSort: widget.sortable ? (columnIndex, ascending) => _sort(index) : null,
                 );
               }).toList(),
-              rows: _paginatedData.asMap().entries.map((entry) {
-                final index = entry.key;
-                final row = entry.value;
-                final Color? rowColor = index.isEven
-                    ? widget.tableStyle.evenRowColor
-                    : widget.tableStyle.oddRowColor;
-
+              rows: _paginatedData.map((row) {
                 return DataRow(
-                  color: WidgetStateProperty.all(rowColor),
                   cells: _headers.map((header) {
-                    final value = row[header];
-                    return DataCell(
-                      Padding(
-                        padding: widget.tableStyle.cellPadding,
-                        child: Text(value?.toString() ?? ''),
-                      ),
-                    );
+                    return DataCell(Text(row[header]?.toString() ?? ''));
                   }).toList(),
                 );
               }).toList(),
@@ -215,31 +293,54 @@ class _InteractiveTableState extends State<InteractiveTable> {
           ),
         ),
         if (widget.pagination && totalPages > 1)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.chevron_left),
-                  onPressed: _currentPage > 0
-                      ? () => _changePage(_currentPage - 1)
-                      : null,
-                ),
-                Text(
-                  'Page ${_currentPage + 1} of $totalPages',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.chevron_right),
-                  onPressed: _currentPage < totalPages - 1
-                      ? () => _changePage(_currentPage + 1)
-                      : null,
-                ),
-              ],
-            ),
-          ),
+          _buildPaginationControls(totalPages),
       ],
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: TextField(
+        controller: _searchController,
+        decoration: const InputDecoration(
+          labelText: 'Search',
+          border: OutlineInputBorder(),
+          prefixIcon: Icon(Icons.search),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPaginationControls(int totalPages) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.chevron_left),
+            onPressed: _currentPage > 0 ? () => _changePage(_currentPage - 1) : null,
+          ),
+          Text(
+            'Page ${_currentPage + 1} of $totalPages',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          IconButton(
+            icon: const Icon(Icons.chevron_right),
+            onPressed: _currentPage < totalPages - 1 ? () => _changePage(_currentPage + 1) : null,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Text(message),
+      ),
     );
   }
 }

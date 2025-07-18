@@ -15,12 +15,11 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   final _searchController = TextEditingController();
 
-  // Let's create more data to showcase pagination
   final List<Map<String, dynamic>> _sampleData = List.generate(
     50,
         (index) => {
       'ID': index + 1,
-      'Name': 'User ${index + 1}',
+      'Name': 'User Name ${index + 1}',
       'Role': (index % 3 == 0)
           ? 'Developer'
           : (index % 3 == 1)
@@ -61,8 +60,16 @@ class _MyAppState extends State<MyApp> {
                 child: InteractiveTable(
                   searchController: _searchController,
                   sortable: true,
-                  pagination: true, // Enable pagination
-                  rowsPerPage: 8, // Set rows per page
+                  pagination: true,
+                  rowsPerPage: 15,
+                  // --- Sticky Header Configuration ---
+                  stickyHeaders: true, // Enable sticky headers
+                  columnWidths: const { // Provide column widths
+                    'ID': 50.0,
+                    'Name': 150.0,
+                    'Role': 150.0,
+                  },
+                  // ------------------------------------
                   tableStyle: TableStyle(
                     headerColor: Colors.blueGrey[800],
                     evenRowColor: Colors.grey[850],
