@@ -49,4 +49,38 @@ void main() {
         // Verify that no DataCells are rendered.
         expect(find.byType(DataCell), findsNothing);
       });
+
+  testWidgets('InteractiveTable sorts data when a column header is tapped',
+          (WidgetTester tester) async {
+        // Build the widget with sortable enabled.
+        await tester.pumpWidget(createTestApp(
+          const InteractiveTable(
+            data: testData,
+            sortable: true,
+          ),
+        ));
+
+        // Tap the 'Name' header to sort ascending.
+        await tester.tap(find.text('Name'));
+        await tester.pumpAndSettle(); // Use pumpAndSettle to wait for animations
+
+        // Get the y-coordinates of the Text widgets.
+        final aliceLocationAsc = tester.getTopLeft(find.text('Alice'));
+        final bobLocationAsc = tester.getTopLeft(find.text('Bob'));
+
+        // Verify that Alice is visually above Bob in the list.
+        expect(aliceLocationAsc.dy, lessThan(bobLocationAsc.dy));
+
+        // Tap the 'Name' header again to sort descending.
+        await tester.tap(find.text('Name'));
+        await tester.pumpAndSettle(); // Wait for animations again
+
+        // Get the new y-coordinates.
+        final aliceLocationDesc = tester.getTopLeft(find.text('Alice'));
+        final bobLocationDesc = tester.getTopLeft(find.text('Bob'));
+
+        // Verify that Bob is now visually above Alice in the list.
+        expect(bobLocationDesc.dy, lessThan(aliceLocationDesc.dy));
+      });
+
 }

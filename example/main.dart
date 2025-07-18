@@ -20,6 +20,7 @@ class MyApp extends StatelessWidget {
         body: Padding(
           padding: const EdgeInsets.all(16.0),
           child: InteractiveTable(
+            sortable: true,
             tableStyle: TableStyle(
               headerColor: Colors.blueGrey[800],
               evenRowColor: Colors.grey[850],
