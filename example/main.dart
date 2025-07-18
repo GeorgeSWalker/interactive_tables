@@ -78,6 +78,17 @@ class _MyAppState extends State<MyApp> {
                       _selectedRows = selectedRows;
                     });
                   },
+                  conditionalTextStyleBuilder: (String header, dynamic value) {
+                    if (header == 'Role') {
+                      if (value == 'Developer') {
+                        return const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold);
+                      }
+                      if (value == 'Manager') {
+                        return const TextStyle(color: Colors.yellowAccent);
+                      }
+                    }
+                    return null; // Return null for all other cases
+                  },
                   tableStyle: TableStyle(
                     headerColor: Colors.blueGrey[800],
                     evenRowColor: Colors.grey[850],
@@ -85,6 +96,9 @@ class _MyAppState extends State<MyApp> {
                     headerTextStyle: const TextStyle(
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
+                    ),
+                    rowTextStyle: const TextStyle( // Default style for all rows
+                      color: Colors.white70,
                     ),
                   ),
                   data: _sampleData,

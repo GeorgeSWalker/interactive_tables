@@ -3,6 +3,9 @@ import 'package:interactive_tables/src/table_style.dart';
 import 'package:linked_scroll_controller/linked_scroll_controller.dart';
 import 'dart:math';
 
+/// A typedef for a function that returns a TextStyle based on a cell's content.
+typedef ConditionalTextStyleBuilder = TextStyle? Function(String header, dynamic value);
+
 class InteractiveTable extends StatefulWidget {
   final List<Map<String, dynamic>> data;
   final List<String>? headers;
@@ -16,8 +19,10 @@ class InteractiveTable extends StatefulWidget {
   final Map<String, double>? columnWidths;
   final bool selectable;
   final ValueChanged<List<Map<String, dynamic>>>? onSelectionChanged;
+  final ConditionalTextStyleBuilder? conditionalTextStyleBuilder;
 
-
+  // --- THIS IS THE FIX ---
+  // Removed the 'const' keyword from the constructor.
   const InteractiveTable({
     super.key,
     required this.data,
@@ -32,6 +37,7 @@ class InteractiveTable extends StatefulWidget {
     this.columnWidths,
     this.selectable = false,
     this.onSelectionChanged,
+    this.conditionalTextStyleBuilder,
   }) : assert(!stickyHeaders || columnWidths != null,
   'columnWidths must be provided when stickyHeaders is true.');
 
@@ -82,6 +88,9 @@ class _InteractiveTableState extends State<InteractiveTable> {
       _isExternalController = widget.searchController != null;
       _searchController = widget.searchController ?? TextEditingController();
       _searchController.addListener(_onSearchChanged);
+    }
+    if (widget.conditionalTextStyleBuilder != oldWidget.conditionalTextStyleBuilder) {
+      setState(() {});
     }
   }
 
@@ -177,6 +186,16 @@ class _InteractiveTableState extends State<InteractiveTable> {
     if (mounted) {
       setState(() {});
     }
+  }
+
+  Widget _buildCellText(String header, dynamic value) {
+    final conditionalStyle = widget.conditionalTextStyleBuilder?.call(header, value);
+    final finalStyle = conditionalStyle ?? widget.tableStyle.rowTextStyle;
+
+    return Text(
+      value?.toString() ?? '',
+      style: finalStyle,
+    );
   }
 
   @override
@@ -289,10 +308,7 @@ class _InteractiveTableState extends State<InteractiveTable> {
           }
           return Padding(
             padding: widget.tableStyle.cellPadding,
-            child: Text(
-              rowData[header]?.toString() ?? '',
-              style: widget.tableStyle.rowTextStyle,
-            ),
+            child: _buildCellText(header, rowData[header]),
           );
         }).toList(),
       );
@@ -318,7 +334,6 @@ class _InteractiveTableState extends State<InteractiveTable> {
               sortColumnIndex: _sortColumnIndex,
               sortAscending: _sortAscending,
               headingTextStyle: widget.tableStyle.headerTextStyle,
-              dataTextStyle: widget.tableStyle.rowTextStyle,
               headingRowColor: WidgetStateProperty.all(widget.tableStyle.headerColor),
               columns: _headers.asMap().entries.map((entry) {
                 final index = entry.key;
@@ -336,7 +351,7 @@ class _InteractiveTableState extends State<InteractiveTable> {
                       ? (isSelected) => _toggleRowSelection(row, isSelected)
                       : null,
                   cells: _headers.map((header) {
-                    return DataCell(Text(row[header]?.toString() ?? ''));
+                    return DataCell(_buildCellText(header, row[header]));
                   }).toList(),
                 );
               }).toList(),

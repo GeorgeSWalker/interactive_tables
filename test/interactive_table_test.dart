@@ -213,4 +213,33 @@ void main() {
         expect(selectedRows.length, 0);
       });
 
+  testWidgets('InteractiveTable applies conditional formatting',
+          (WidgetTester tester) async {
+        final List<Map<String, dynamic>> formattingData = [
+          {'ID': 1, 'Status': 'Active'},
+          {'ID': 2, 'Status': 'Inactive'},
+        ];
+
+        await tester.pumpWidget(createTestApp(
+          InteractiveTable(
+            data: formattingData,
+            conditionalTextStyleBuilder: (header, value) {
+              if (header == 'Status' && value == 'Active') {
+                return const TextStyle(color: Colors.green);
+              }
+              return null;
+            },
+          ),
+        ));
+        await tester.pumpAndSettle();
+
+        // Find the "Active" text widget and check its style.
+        final activeText = tester.widget<Text>(find.text('Active'));
+        expect(activeText.style?.color, Colors.green);
+
+        // Find the "Inactive" text widget and ensure it does NOT have the special style.
+        final inactiveText = tester.widget<Text>(find.text('Inactive'));
+        expect(inactiveText.style?.color, isNot(Colors.green));
+      });
+
 }
