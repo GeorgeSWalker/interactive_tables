@@ -4,16 +4,22 @@ A powerful and flexible Flutter package for creating feature-rich, interactive d
 
 This package provides a simple way to generate tables from your data, with built-in support for sorting, searching, pagination, sticky headers, row selection, and conditional styling. It's designed to be easy to use for simple tables, while also being highly customizable for more complex scenarios.
 
+## Documentation
+
+* [**API Reference**](https://pub.dev/documentation/interactive_tables/latest/) - The complete, auto-generated API reference for all classes and methods. (Note: This link will work after you publish to pub.dev).
+* **Feature Guide** - A detailed guide on how to use all the features (coming soon).
+* **Styling Guide** - A guide on how to customize the look and feel of your table (coming soon).
+
 ## Features
 
 * **Dynamic Table Generation**: Automatically generate columns and rows from a `List` of `Map`s.
-* **Customizable Styling**: Control the look and feel of your table, including header styles, row colors, and cell padding.
-* **Automatic Sorting**: Enable sorting on any column. The table handles both numeric and alphabetic data, with ascending and descending order.
-* **Built-in & External Search**: Add a search bar to filter your data in real-time. You can use the built-in search field or provide your own `TextEditingController` for custom layouts.
-* **Pagination**: For large datasets, enable pagination to break your data into manageable pages, improving performance and user experience.
-* **Sticky Headers**: Keep your column headers visible as the user scrolls vertically through the data.
-* **Row Selection**: Allow users to select single or multiple rows, with a callback to get the selected data.
-* **Conditional Formatting**: Define custom rules to dynamically style individual cells based on their content, perfect for highlighting important information.
+* **Customizable Styling**: Control the look and feel of your table.
+* **Automatic Sorting**: Enable sorting on any column.
+* **Built-in & External Search**: Filter your data in real-time.
+* **Pagination**: Break your data into manageable pages.
+* **Sticky Headers**: Keep your column headers visible.
+* **Row Selection**: Allow users to select rows.
+* **Conditional Formatting**: Dynamically style individual cells.
 
 ## Getting Started
 
@@ -40,10 +46,10 @@ Here's a simple example of how to create a basic table:
 
 ```dart
 InteractiveTable(
-  data: const [
-    {'ID': 1, 'Name': 'John Doe', 'Role': 'Developer'},
-    {'ID': 2, 'Name': 'Jane Smith', 'Role': 'Designer'},
-  ],
+data: const [
+{'ID': 1, 'Name': 'John Doe', 'Role': 'Developer'},
+{'ID': 2, 'Name': 'Jane Smith', 'Role': 'Designer'},
+],
 )
 ```
 
@@ -53,55 +59,55 @@ Here is a more advanced example demonstrating how to use all the features togeth
 
 ```dart
 InteractiveTable(
-  // Data and Headers
-  data: _sampleData,
-  headers: const ['ID', 'Name', 'Role'],
+// Data and Headers
+data: _sampleData,
+headers: const ['ID', 'Name', 'Role'],
 
-  // Styling
-  tableStyle: TableStyle(
-    headerColor: Colors.blueGrey[800],
-    evenRowColor: Colors.grey[850],
-    oddRowColor: Colors.grey[900],
-    headerTextStyle: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-    rowTextStyle: const TextStyle(color: Colors.white70),
-    cellPadding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
-  ),
+// Styling
+tableStyle: TableStyle(
+headerColor: Colors.blueGrey[800],
+evenRowColor: Colors.grey[850],
+oddRowColor: Colors.grey[900],
+headerTextStyle: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+rowTextStyle: const TextStyle(color: Colors.white70),
+cellPadding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
+),
 
-  // Features
-  sortable: true,
-  searchController: _searchController, // Provide an external controller
-  pagination: true,
-  rowsPerPage: 15,
+// Features
+sortable: true,
+searchController: _searchController, // Provide an external controller
+pagination: true,
+rowsPerPage: 15,
 
-  // Sticky Headers
-  stickyHeaders: true,
-  columnWidths: const {
-    'ID': 50.0,
-    'Name': 150.0,
-    'Role': 150.0,
-    'Select': 60.0, // Don't forget width for the select column
-  },
+// Sticky Headers
+stickyHeaders: true,
+columnWidths: const {
+'ID': 50.0,
+'Name': 150.0,
+'Role': 150.0,
+'Select': 60.0, // Don't forget width for the select column
+},
 
-  // Row Selection
-  selectable: true,
-  onSelectionChanged: (selectedRows) {
-    setState(() {
-      _selectedRows = selectedRows;
-    });
-  },
+// Row Selection
+selectable: true,
+onSelectionChanged: (selectedRows) {
+setState(() {
+_selectedRows = selectedRows;
+});
+},
 
-  // Conditional Formatting
-  conditionalTextStyleBuilder: (String header, dynamic value) {
-    if (header == 'Role') {
-      if (value == 'Developer') {
-        return const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold);
-      }
-      if (value == 'Manager') {
-        return const TextStyle(color: Colors.yellowAccent);
-      }
-    }
-    return null; // Use default style for all other cases
-  },
+// Conditional Formatting
+conditionalTextStyleBuilder: (String header, dynamic value) {
+if (header == 'Role') {
+if (value == 'Developer') {
+return const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold);
+}
+if (value == 'Manager') {
+return const TextStyle(color: Colors.yellowAccent);
+}
+}
+return null; // Use default style for all other cases
+},
 )
 ```
 

@@ -3,26 +3,92 @@ import 'package:interactive_tables/src/table_style.dart';
 import 'package:linked_scroll_controller/linked_scroll_controller.dart';
 import 'dart:math';
 
-/// A typedef for a function that returns a TextStyle based on a cell's content.
+/// A typedef for a function that returns a [TextStyle] based on a cell's content.
+///
+/// This is used for conditional formatting.
+/// The function receives the column `header` and the cell `value`.
+/// It should return a [TextStyle] to apply, or `null` to use the default style.
 typedef ConditionalTextStyleBuilder = TextStyle? Function(String header, dynamic value);
 
+/// A powerful and flexible data table widget for Flutter.
+///
+/// It supports sorting, searching, pagination, sticky headers, row selection,
+/// and conditional styling right out of the box.
 class InteractiveTable extends StatefulWidget {
+  /// The data to display in the table.
+  ///
+  /// This is a list of maps, where each map represents a row.
+  /// The keys of the map correspond to the column headers.
   final List<Map<String, dynamic>> data;
+
+  /// An optional list of strings to use as column headers.
+  ///
+  /// If this is `null`, the headers will be generated from the keys
+  /// of the first map in the `data` list.
   final List<String>? headers;
+
+  /// The visual styling for the table.
+  ///
+  /// See [TableStyle] for more details on customization options.
   final TableStyle tableStyle;
+
+  /// Enables or disables sorting for all columns.
+  ///
+  /// When `true`, users can tap on column headers to sort the data.
   final bool sortable;
+
+  /// Enables or disables the built-in search functionality.
+  ///
+  /// When `true` and no `searchController` is provided, a search bar
+  /// will be displayed above the table.
   final bool searchable;
+
+  /// An optional `TextEditingController` to control the search from outside the widget.
+  ///
+  /// If you provide your own controller, the built-in search bar will not be shown.
+  /// This allows you to create custom search UI.
   final TextEditingController? searchController;
+
+  /// Enables or disables pagination.
+  ///
+  /// When `true`, the data will be split into pages.
   final bool pagination;
+
+  /// The number of rows to display per page when pagination is enabled.
   final int rowsPerPage;
+
+  /// Enables or disables sticky headers.
+  ///
+  /// When `true`, the column headers will remain visible at the top
+  /// as the user scrolls vertically.
+  ///
+  /// **NOTE:** When `stickyHeaders` is `true`, you **must** also provide `columnWidths`.
   final bool stickyHeaders;
+
+  /// A map defining the width for each column.
+  ///
+  /// The keys should match the column headers. This is **required** when `stickyHeaders` is `true`
+  /// to ensure proper alignment.
   final Map<String, double>? columnWidths;
+
+  /// Enables or disables row selection.
+  ///
+  /// When `true`, a checkbox will appear on each row, and the `onSelectionChanged`
+  /// callback will be triggered when the selection changes.
   final bool selectable;
+
+  /// A callback that is triggered when the set of selected rows changes.
+  ///
+  /// It receives a list of the currently selected rows.
   final ValueChanged<List<Map<String, dynamic>>>? onSelectionChanged;
+
+  /// A function to build a custom [TextStyle] for a cell based on its content.
+  ///
+  /// This allows for powerful conditional formatting, like changing the color
+  /// of a cell based on its value.
   final ConditionalTextStyleBuilder? conditionalTextStyleBuilder;
 
-  // --- THIS IS THE FIX ---
-  // Removed the 'const' keyword from the constructor.
+  /// Creates a new [InteractiveTable] widget.
   const InteractiveTable({
     super.key,
     required this.data,
@@ -389,7 +455,7 @@ class _InteractiveTableState extends State<InteractiveTable> {
             onPressed: _currentPage > 0 ? () => _changePage(_currentPage - 1) : null,
           ),
           Text(
-            'Page ${_currentPage + 1} of $totalPages',
+            'Page ${(_currentPage + 1).toString()} of ${totalPages.toString()}',
             style: Theme.of(context).textTheme.bodySmall,
           ),
           IconButton(
